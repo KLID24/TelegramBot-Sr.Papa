@@ -1,0 +1,2 @@
+firebase-admin
+python-telegram-bot
