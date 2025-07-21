@@ -7,9 +7,16 @@ from telebot import types
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 Orders: list[dict] = []
 
+def fb_update_name(name: str):
+    ref = db.reference("user")
+    
+    ref.set({
+        "name": name
+    })
+    
 @bot.message_handler(commands=['info', 'start'])
 def send_welcome(msg):
-    bot.reply_to(msg,         
+    bot.reply_to(msg,
 """
 ¡Hola! Soy el bot del café Sr.Papa.
             
@@ -31,18 +38,20 @@ def send_orders_list(msg):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    # Get the data from the button pressed
     selected_order = Orders[int(call.data)]
     selected_order_details = selected_order["details"]
+    selected_order_name = selected_order["name"]   
     
     # Respond to the user based on the selected option
-    bot.answer_callback_query(call.id)  # Acknowledge the button press
-    bot.send_message(call.message.chat.id, f"Informacion sobre el pedido: {selected_order_details}")
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, f"Informacion sobre el pedido: \n\n{selected_order_details}")
+   
+    fb_update_name(selected_order_name)
+    bot.send_message(call.message.chat.id, f'Nombre "{selected_order_name}" selecionado')
 
 @bot.message_handler(func=lambda message: True)
 def save_name(msg):
-    text = msg.text
-    is_name_saved = False
+    text: str = msg.text
 
     order = {
         "name": "",
@@ -51,22 +60,17 @@ def save_name(msg):
 
     # Search for the line with the name
     for line in text.split("\n"):
-        if line.startswith("Name:") and not is_name_saved:
-            name = line.split("Name:")[1].strip()
+        if line.startswith("Name:") and not order["name"]:
+            name = line.replace("Name:", "").strip()
+            bot.reply_to(msg, f"✅ Nombre guardado: {name}")
             order["name"] = name
 
-            # ref = db.reference("user")
-            # ref.set({
-            #     "name": name
-            # })
-            
-            bot.reply_to(msg, f"✅ Nombre guardado: {name}")
-            is_saved = True
-        else:
-            order["details"] += line + "\n"
+            continue
+
+        order["details"] += line + "\n"
     
     # If the name is not found
-    if is_name_saved:
+    if not order["name"]:
         bot.reply_to(msg, '⚠️ Nombre no encontrado. Asegúrate de que el mensaje contenga una línea como: "Name: Danil"')
     else:
         Orders.append(order)
@@ -75,7 +79,7 @@ if __name__ == "__main__":
     firebase_admin.initialize_app(
         credentials.Certificate("keys/firebase.json"), 
         {
-            'databaseURL': FIREBASE_URL
+            "databaseURL": FIREBASE_URL
         }
     )
 
