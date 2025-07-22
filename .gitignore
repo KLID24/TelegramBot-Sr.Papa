@@ -1,2 +1,5 @@
 env/
 keys/
+storage/
+rofls/
+__pycache__/
