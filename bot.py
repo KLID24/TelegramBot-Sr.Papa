@@ -13,17 +13,23 @@ def fb_update_name(name: str):
         "name": name
     })
 
-@bot.message_handler(commands=['info', 'start'])
+def is_user_allowed(user_id: int, chat_id: int):
+    if not auth.is_user_allowed(user_id):
+        bot.send_message(chat_id, "ℹ️ ¡Usted no esta registrado, por favor escriba /login!")
+        return False
+    return True
+
+@bot.message_handler(commands=['info', 'start', 'help'])
 def send_welcome(msg: Message):
-    bot.reply_to(msg,"¡Hola! Soy el bot del café Sr.Papa.\n\nEscribe tu nombre y/o apellido separados por un espacio (por ejemplo: Name: Ivan Petrov o Name: Juan).\n\nTambién puedes simplemente reenviar el mensaje del bot de Tilda.")
-    
-    if not auth.is_user_allowed(msg.from_user.id):
-        bot.send_message(msg.chat.id, "¡Usted no esta registrado, por favor escriba /login!")
+    bot.reply_to(msg, "ℹ️ ¡Hola! Soy el bot del café Sr.Papa.\n\nEscribe tu nombre y/o apellido separados por un espacio (por ejemplo: Name: Ivan Petrov o Name: Juan).\n\nTambién puedes simplemente reenviar el mensaje del bot de Tilda.")
+    bot.reply_to(msg, 'ℹ️ Los comandos disponibles son: \n\n/start, /info o /help Mostrar este mensaje \n/login Empezar el dialogo de registracion\n/list Mostrar todos los pedidos guardados y elegir el pedido selecionado para el robot')
+
+    is_user_allowed(msg.from_user.id, msg.chat.id)
 
 @bot.message_handler(commands=['login'])
 def prompt_password(msg: Message):
     user_id = msg.from_user.id
-    bot.send_message(msg.chat.id, "¡Por favor entre la contraseña!")
+    bot.send_message(msg.chat.id, "ℹ️ ¡Por favor entre la contraseña!")
     bot.register_next_step_handler(msg, handle_password)
 
 def handle_password(msg: Message):
@@ -39,8 +45,7 @@ def handle_password(msg: Message):
 
 @bot.message_handler(commands=['list'])
 def send_orders_list(msg: Message):
-    if not auth.is_user_allowed(msg.from_user.id):
-        bot.send_message(msg.chat.id, "¡Usted no esta registrado, por favor escriba /login!")
+    if not is_user_allowed(msg.from_user.id, msg.chat.id):
         return
 
     keyboard = InlineKeyboardMarkup()
@@ -51,7 +56,7 @@ def send_orders_list(msg: Message):
             button = InlineKeyboardButton(text=name, callback_data=str(index))
             keyboard.add(button)
 
-        bot.send_message(msg.chat.id, "Elige el order:", reply_markup=keyboard)
+        bot.send_message(msg.chat.id, "ℹ️ Elige el order:", reply_markup=keyboard)
     else:
         bot.send_message(msg.chat.id, "ℹ️ ¡Aún no hay pedidos! Por favor insértelos")
 
@@ -69,11 +74,8 @@ def handle_query(call: CallbackQuery):
 
 @bot.message_handler(func=lambda message: True)
 def save_name(msg: Message):
-    if not auth.is_user_allowed(msg.from_user.id):
-        bot.send_message(msg.chat.id, "¡Usted no esta registrado, por favor escriba /login!")
+    if not is_user_allowed(msg.from_user.id, msg.chat.id):
         return
-
-    text: str = msg.text
 
     new_order = {
         "name": "",
@@ -81,7 +83,7 @@ def save_name(msg: Message):
     }
 
     # Search for the line with the name
-    for line in text.split("\n"):
+    for line in msg.text.split("\n"):
         if not new_order["name"] and line.startswith("Name:"):
             name = line.replace("Name:", "").strip()
             new_order["name"] = name
@@ -99,7 +101,7 @@ def save_name(msg: Message):
     orders.append(new_order)
 
 if __name__ == "__main__":
-    # Initializing firebase
+    # Initializing firebasez
     firebase_admin.initialize_app(
         credentials.Certificate("keys/firebase.json"), 
         {
