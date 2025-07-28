@@ -15,14 +15,14 @@ def fb_update_name(name: str):
 
 def is_user_allowed(user_id: int, chat_id: int):
     if not auth.is_user_allowed(user_id):
-        bot.send_message(chat_id, "ℹ️ ¡Usted no esta registrado, por favor escriba /login!")
+        bot.send_message(chat_id, "ℹ️ ¡Usted no esta registrado, escriba /login!")
         return False
     return True
 
-@bot.message_handler(commands=['info', 'start', 'help'])
+@bot.message_handler(commands=['help'])
 def send_welcome(msg: Message):
     bot.reply_to(msg, "ℹ️ ¡Hola! Soy el bot del café Sr.Papa.\n\nEscribe tu nombre y/o apellido separados por un espacio (por ejemplo: Name: Ivan Petrov o Name: Juan).\n\nTambién puedes simplemente reenviar el mensaje del bot de Tilda.")
-    bot.reply_to(msg, 'ℹ️ Los comandos disponibles son: \n\n/start, /info o /help Mostrar este mensaje \n/login Empezar el dialogo de registracion\n/list Mostrar todos los pedidos guardados y elegir el pedido selecionado para el robot')
+    bot.reply_to(msg, 'ℹ️ Los comandos disponibles son: \n\n/help Mostrar este mensaje \n/login Empezar el dialogo de registracion\n/list Mostrar todos los pedidos guardados y elegir el pedido selecionado para el robot')
 
     is_user_allowed(msg.from_user.id, msg.chat.id)
 
